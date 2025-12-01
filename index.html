@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Glb-Controller Split-Screen</title>
+    <title>Split-Screen Optimized</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         
@@ -14,12 +14,13 @@
             top: 0;
             bottom: 0;
             width: 2px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.3);
             z-index: 5;
             pointer-events: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        /* Main UI Container */
+        /* UI Container */
         #ui-container {
             position: absolute;
             top: 0;
@@ -37,11 +38,33 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 101;
+            transition: 0.2s;
+        }
+        #settings-btn:active { transform: translateX(-50%) scale(0.9); }
+
+        /* Fullscreen Button */
+        #fs-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
             width: 40px;
             height: 40px;
             background: rgba(0, 0, 0, 0.6);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
             color: white;
             font-size: 20px;
             cursor: pointer;
@@ -54,47 +77,73 @@
 
         #custom-menu {
             position: absolute;
-            top: 70px;
+            top: 80px;
             left: 50%;
             transform: translateX(-50%) scale(0);
-            width: 250px;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+            width: 280px;
+            background: rgba(15, 15, 15, 0.95);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.15);
             pointer-events: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            transition: 0.3s;
+            gap: 15px;
+            transition: 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: top center;
             z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        #custom-menu.visible { transform: translateX(-50%) scale(1); }
+        #custom-menu.visible { transform: translateX(-50%) scale(1); opacity: 1; }
 
-        .menu-item { color: white; font-size: 0.9rem; }
+        .menu-item { color: #eee; font-size: 0.9rem; }
+        .menu-label { display: block; margin-bottom: 8px; font-weight: 600; color: #aaa; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        
         .file-upload {
-            display: inline-block;
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 6px;
+            display: block;
+            padding: 10px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
             cursor: pointer;
-            width: 100%;
-            border: 1px dashed #555;
             text-align: center;
+            border: 1px dashed #555;
+            transition: 0.2s;
         }
+        .file-upload:active { background: rgba(255,255,255,0.2); }
         input[type="file"] { display: none; }
 
-        #controls-info {
+        /* Zoom Slider */
+        input[type=range] {
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 5px;
+            outline: none;
+            appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        /* Info & Status */
+        #status {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 5px 15px;
+            color: #ddd;
+            padding: 6px 16px;
             border-radius: 20px;
             pointer-events: none;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             z-index: 50;
+            white-space: nowrap;
         }
 
         /* Drop Zone */
@@ -105,57 +154,60 @@
             transform: translate(-50%, -50%);
             width: 60%;
             height: 30%;
-            border: 3px dashed #888;
+            border: 3px dashed #666;
             border-radius: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             color: #fff;
             pointer-events: auto; 
             cursor: pointer;
             z-index: 20;
+            transition: opacity 0.3s;
         }
-        #drop-zone.hidden { display: none; }
+        #drop-zone.hidden { opacity: 0; pointer-events: none; }
 
         /* --- CONTROLS --- */
         .touch-controls {
             position: absolute;
             bottom: 20px;
             width: 100%;
-            height: 150px;
+            height: 160px;
             pointer-events: none;
             display: flex;
             justify-content: space-between;
-            padding: 0 40px;
+            padding: 0 5%;
             box-sizing: border-box;
         }
 
         .player-label {
             position: absolute;
-            top: -30px;
+            top: -35px;
             width: 100%;
             text-align: center;
-            color: rgba(255,255,255,0.5);
-            font-weight: bold;
-            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 800;
+            font-size: 12px;
+            letter-spacing: 2px;
         }
 
         .d-pad {
-            width: 140px;
-            height: 140px;
+            width: 130px;
+            height: 130px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 50%;
             position: relative;
             pointer-events: auto;
-            backdrop-filter: blur(2px);
-            border: 2px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
         .d-btn {
             position: absolute;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -163,17 +215,19 @@
             user-select: none;
             cursor: pointer;
             font-size: 1.2rem;
-            width: 45px;
-            height: 45px;
-            transition: background 0.1s;
+            width: 42px;
+            height: 42px;
+            transition: background 0.1s, transform 0.1s;
         }
-        .d-btn:active { background: rgba(255, 255, 255, 0.6); color: black; }
+        .d-btn:active { background: rgba(255, 255, 255, 0.8); color: black; transform: scale(0.9); }
 
-        /* Positioning buttons within D-pad */
-        .btn-up { top: 10px; left: 50%; transform: translateX(-50%); }
-        .btn-down { bottom: 10px; left: 50%; transform: translateX(-50%); }
-        .btn-left { top: 50%; left: 10px; transform: translateY(-50%); }
-        .btn-right { top: 50%; right: 10px; transform: translateY(-50%); }
+        .btn-up { top: 8px; left: 50%; transform: translateX(-50%); }
+        .btn-down { bottom: 8px; left: 50%; transform: translateX(-50%); }
+        .btn-left { top: 50%; left: 8px; transform: translateY(-50%); }
+        .btn-right { top: 50%; right: 8px; transform: translateY(-50%); }
+
+        /* PC hint */
+        .pc-hint { font-size: 10px; opacity: 0.6; position: absolute; bottom: -20px; width: 100%; text-align: center; color: white;}
 
     </style>
     
@@ -194,43 +248,51 @@
     <div id="divider"></div>
 
     <div id="ui-container">
-        <div id="settings-btn" title="Customize">⚙️</div>
+        <div id="settings-btn" title="Settings">⚙️</div>
         
+        <div id="fs-btn" title="Fullscreen">⛶</div>
+
         <div id="custom-menu">
             <div class="menu-item">
-                <span style="display:block; margin-bottom:5px;">Floor Texture</span>
-                <label class="file-upload">Select Image...<input type="file" id="floor-input" accept="image/png, image/jpeg"></label>
+                <span class="menu-label">Camera Zoom</span>
+                <input type="range" id="zoom-slider" min="2" max="15" step="0.5" value="5">
             </div>
-            <div class="menu-item" style="margin-top:10px;">
-                <span style="display:block; margin-bottom:5px;">Skybox</span>
-                <label class="file-upload">Select Image...<input type="file" id="sky-input" accept="image/png, image/jpeg"></label>
+
+            <div class="menu-item">
+                <span class="menu-label">Environment</span>
+                <label class="file-upload">Change Floor<input type="file" id="floor-input" accept="image/*"></label>
             </div>
+            
+            <div class="menu-item">
+                <label class="file-upload">Change Skybox<input type="file" id="sky-input" accept="image/*"></label>
+            </div>
+            <div style="font-size:10px; color:#555; text-align:center; margin-top:5px;">V 2.0 Optimized</div>
         </div>
 
-        <div id="controls-info">
-            <span id="status">Waiting for model...</span>
-        </div>
+        <span id="status">Waiting for model...</span>
 
         <div id="drop-zone">
-            <p style="font-size: 1.5rem; margin-bottom: 10px;">📂 Load Model (P1 & P2)</p>
-            <p style="font-size: 0.9rem; color: #ccc;">Tap or Drag & Drop .GLB</p>
+            <p style="font-size: 1.4rem; margin-bottom: 5px;">📂 Load Character</p>
+            <p style="font-size: 0.8rem; color: #bbb;">(.glb / .gltf)</p>
         </div>
 
         <div class="touch-controls">
             <div class="d-pad" id="p1-pad">
-                <div class="player-label">PLAYER 1 (WASD)</div>
+                <div class="player-label">PLAYER 1</div>
                 <div id="p1-w" class="d-btn btn-up">▲</div>
                 <div id="p1-s" class="d-btn btn-down">▼</div>
                 <div id="p1-a" class="d-btn btn-left">◀</div>
                 <div id="p1-d" class="d-btn btn-right">▶</div>
+                <div class="pc-hint">(WASD)</div>
             </div>
 
             <div class="d-pad" id="p2-pad">
-                <div class="player-label">PLAYER 2 (ARROWS)</div>
+                <div class="player-label">PLAYER 2</div>
                 <div id="p2-up" class="d-btn btn-up">▲</div>
                 <div id="p2-down" class="d-btn btn-down">▼</div>
                 <div id="p2-left" class="d-btn btn-left">◀</div>
                 <div id="p2-right" class="d-btn btn-right">▶</div>
+                <div class="pc-hint">(ARROWS)</div>
             </div>
         </div>
     </div>
@@ -243,21 +305,19 @@
         // --- CONFIG ---
         const WALK_SPEED = 5;
         const ROTATION_SPEED = 3;
-        const CAM_DIST = 5;
         const CAM_HEIGHT = 4;
-
-        // --- GLOBALS ---
+        
+        // --- STATE ---
+        let currentZoom = 5;
         let scene, renderer, clock;
         let camera1, camera2;
         let floorMesh, gridHelper;
 
-        // Input State
         const inputs = {
             p1: { w: false, s: false, a: false, d: false },
             p2: { up: false, down: false, left: false, right: false }
         };
 
-        // Player Objects
         const players = [
             { id: 1, model: null, mixer: null, actions: {}, activeAction: null, pos: new THREE.Vector3(-2, 0, 0) },
             { id: 2, model: null, mixer: null, actions: {}, activeAction: null, pos: new THREE.Vector3(2, 0, 0) }
@@ -270,61 +330,74 @@
             const container = document.createElement('div');
             document.body.appendChild(container);
 
-            // 1. Setup Scene
+            // 1. Scene
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x222222);
-            scene.fog = new THREE.Fog(0x222222, 10, 60);
+            scene.background = new THREE.Color(0x1a1a1a);
+            scene.fog = new THREE.Fog(0x1a1a1a, 10, 50);
 
-            // 2. Lights
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 3);
+            // 2. Lights (Optimized)
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
             hemiLight.position.set(0, 20, 0);
             scene.add(hemiLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-            dirLight.position.set(3, 10, 10);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+            dirLight.position.set(5, 10, 5);
             dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 2048;
-            dirLight.shadow.mapSize.height = 2048;
+            // OPTIMIZATION: Lower shadow map resolution
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 50;
             scene.add(dirLight);
 
             // 3. Environment
-            const floorGeometry = new THREE.PlaneGeometry(200, 200);
-            const floorMaterial = new THREE.MeshPhongMaterial({ color: 0x333333, depthWrite: false });
-            floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+            const floorGeo = new THREE.PlaneGeometry(200, 200);
+            const floorMat = new THREE.MeshPhongMaterial({ color: 0x222222, depthWrite: false });
+            floorMesh = new THREE.Mesh(floorGeo, floorMat);
             floorMesh.rotation.x = -Math.PI / 2;
             floorMesh.receiveShadow = true;
             scene.add(floorMesh);
             
-            gridHelper = new THREE.GridHelper(200, 80, 0x888888, 0x444444);
-            gridHelper.material.opacity = 0.2;
+            gridHelper = new THREE.GridHelper(200, 60, 0x666666, 0x333333);
+            gridHelper.material.opacity = 0.3;
             gridHelper.material.transparent = true;
             scene.add(gridHelper);
 
             // 4. Cameras
             const aspect = (window.innerWidth / 2) / window.innerHeight;
-            camera1 = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
-            camera2 = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+            camera1 = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
+            camera2 = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
 
-            // 5. Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
+            // 5. Renderer (Optimized)
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" }); // Disabled AA for speed
+            // OPTIMIZATION: Cap Pixel Ratio to 1.5 max for mobile performance
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
-            // Enable Scissor Test for Split Screen
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.setScissorTest(true);
             container.appendChild(renderer.domElement);
 
             clock = new THREE.Clock();
 
-            // 6. Interactions
+            // 6. Setup
             setupFileHandling();
             setupInputs();
-            setupCustomization();
+            setupUI();
 
             window.addEventListener('resize', onWindowResize);
+            
+            // Mouse Wheel Zoom
+            window.addEventListener('wheel', (e) => {
+                const slider = document.getElementById('zoom-slider');
+                let val = parseFloat(slider.value) + (e.deltaY * 0.01);
+                val = Math.max(2, Math.min(15, val));
+                slider.value = val;
+                currentZoom = val;
+            }, { passive: true });
         }
 
-        // --- MODEL LOADING & CLONING ---
+        // --- MODEL LOGIC ---
         function loadModelFromFile(file) {
             const url = URL.createObjectURL(file);
             const loader = new GLTFLoader();
@@ -333,7 +406,7 @@
 
             statusDiv.innerText = "Loading...";
 
-            // Clean up old models
+            // Reset
             players.forEach(p => {
                 if (p.model) scene.remove(p.model);
                 p.model = null;
@@ -342,19 +415,17 @@
 
             loader.load(url, function(gltf) {
                 dropZone.classList.add('hidden');
-                statusDiv.innerText = `Loaded: ${file.name}`;
+                statusDiv.innerText = `Active: ${file.name}`;
 
-                // Setup Player 1
+                // P1
                 setupPlayer(players[0], gltf.scene, gltf.animations);
-                
-                // Setup Player 2 (Clone)
-                // Note: SkeletonUtils is required to clone rigged meshes properly
+                // P2 (Clone)
                 const clone = SkeletonUtils.clone(gltf.scene);
                 setupPlayer(players[1], clone, gltf.animations);
 
             }, undefined, (err) => {
                 console.error(err);
-                statusDiv.innerText = "Error loading model.";
+                statusDiv.innerText = "Error.";
             });
         }
 
@@ -363,196 +434,182 @@
             player.model.position.copy(player.pos);
             
             player.model.traverse(o => {
-                if (o.isMesh) o.castShadow = true;
+                if (o.isMesh) {
+                    o.castShadow = true;
+                    o.receiveShadow = true;
+                }
             });
 
             scene.add(player.model);
 
-            // Setup Animations
-            if (animations && animations.length > 0) {
+            // Animations
+            if (animations.length > 0) {
                 player.mixer = new THREE.AnimationMixer(player.model);
+                // Find animation fuzzily
+                const getClip = (name) => animations.find(c => c.name.toLowerCase().includes(name)) || animations[0];
                 
-                const findClip = (name) => animations.find(c => c.name.toLowerCase().includes(name)) || animations[0];
+                player.actions['idle'] = player.mixer.clipAction(getClip('idle'));
+                player.actions['walk'] = player.mixer.clipAction(getClip('walk'));
                 
-                player.actions['idle'] = player.mixer.clipAction(findClip('idle'));
-                player.actions['walk'] = player.mixer.clipAction(findClip('walk'));
-                player.actions['run'] = player.mixer.clipAction(findClip('run'));
-
                 player.activeAction = player.actions['idle'];
                 player.activeAction.play();
             }
         }
 
-        function fadeAction(player, name, duration) {
+        function fadeAction(player, name) {
             if (!player.actions[name]) return;
-            const newAction = player.actions[name];
-            if (player.activeAction !== newAction) {
-                player.activeAction.fadeOut(duration);
-                newAction.reset().fadeIn(duration).play();
-                player.activeAction = newAction;
+            const newAct = player.actions[name];
+            if (player.activeAction !== newAct) {
+                player.activeAction.fadeOut(0.2);
+                newAct.reset().fadeIn(0.2).play();
+                player.activeAction = newAct;
             }
         }
 
-        // --- INPUT HANDLING ---
-        function setupInputs() {
-            // Keyboard
-            document.addEventListener('keydown', (e) => handleKey(e.key, true));
-            document.addEventListener('keyup', (e) => handleKey(e.key, false));
-
-            // Touch P1
-            bindTouch('p1-w', 'p1', 'w');
-            bindTouch('p1-s', 'p1', 's');
-            bindTouch('p1-a', 'p1', 'a');
-            bindTouch('p1-d', 'p1', 'd');
-
-            // Touch P2
-            bindTouch('p2-up', 'p2', 'up');
-            bindTouch('p2-down', 'p2', 'down');
-            bindTouch('p2-left', 'p2', 'left');
-            bindTouch('p2-right', 'p2', 'right');
-        }
-
-        function handleKey(key, pressed) {
-            const k = key.toLowerCase();
-            // P1 WASD
-            if(k === 'w') inputs.p1.w = pressed;
-            if(k === 's') inputs.p1.s = pressed;
-            if(k === 'a') inputs.p1.a = pressed;
-            if(k === 'd') inputs.p1.d = pressed;
-            
-            // P2 Arrows
-            if(key === 'ArrowUp') inputs.p2.up = pressed;
-            if(key === 'ArrowDown') inputs.p2.down = pressed;
-            if(key === 'ArrowLeft') inputs.p2.left = pressed;
-            if(key === 'ArrowRight') inputs.p2.right = pressed;
-        }
-
-        function bindTouch(elementId, playerKey, inputKey) {
-            const el = document.getElementById(elementId);
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); inputs[playerKey][inputKey] = true; });
-            el.addEventListener('touchend', (e) => { e.preventDefault(); inputs[playerKey][inputKey] = false; });
-        }
-
-        // --- MAIN LOOP ---
-        function updatePlayerMovement(player, delta, inputState) {
+        // --- UPDATE LOOP ---
+        function updatePlayer(player, delta, input) {
             if (!player.model) return;
 
-            let isMoving = false;
-            // P1 uses w/s/a/d, P2 uses up/down/left/right
-            // We map generic logic: up/down/turn
-            const up = player.id === 1 ? inputState.w : inputState.up;
-            const down = player.id === 1 ? inputState.s : inputState.down;
-            const left = player.id === 1 ? inputState.a : inputState.left;
-            const right = player.id === 1 ? inputState.d : inputState.right;
+            let move = false;
+            // Map inputs
+            const up = player.id === 1 ? input.w : input.up;
+            const down = player.id === 1 ? input.s : input.down;
+            const left = player.id === 1 ? input.a : input.left;
+            const right = player.id === 1 ? input.d : input.right;
 
             if (left) player.model.rotation.y += ROTATION_SPEED * delta;
             if (right) player.model.rotation.y -= ROTATION_SPEED * delta;
 
-            if (up) {
-                player.model.translateZ(WALK_SPEED * delta);
-                isMoving = true;
-            }
-            if (down) {
-                player.model.translateZ(-WALK_SPEED * delta);
-                isMoving = true;
-            }
+            if (up) { player.model.translateZ(WALK_SPEED * delta); move = true; }
+            if (down) { player.model.translateZ(-WALK_SPEED * delta); move = true; }
 
             if (player.mixer) {
-                fadeAction(player, isMoving ? 'walk' : 'idle', 0.2);
+                fadeAction(player, move ? 'walk' : 'idle');
                 player.mixer.update(delta);
             }
         }
 
         function updateCameras() {
-            // Camera 1 Follow Player 1
-            if (players[0].model) {
-                const p1 = players[0].model;
-                const offset = new THREE.Vector3(0, CAM_HEIGHT, -CAM_DIST).applyMatrix4(p1.matrixWorld);
-                camera1.position.lerp(offset, 0.1);
-                camera1.lookAt(p1.position.clone().add(new THREE.Vector3(0,1,0)));
-            }
-            
-            // Camera 2 Follow Player 2
-            if (players[1].model) {
-                const p2 = players[1].model;
-                const offset = new THREE.Vector3(0, CAM_HEIGHT, -CAM_DIST).applyMatrix4(p2.matrixWorld);
-                camera2.position.lerp(offset, 0.1);
-                camera2.lookAt(p2.position.clone().add(new THREE.Vector3(0,1,0)));
-            }
+            // Smooth Camera Follow
+            const updateCam = (cam, targetModel) => {
+                if (!targetModel) return;
+                // Calculate ideal position based on current Zoom
+                const offset = new THREE.Vector3(0, CAM_HEIGHT, -currentZoom).applyMatrix4(targetModel.matrixWorld);
+                cam.position.lerp(offset, 0.1);
+                cam.lookAt(targetModel.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+            };
+
+            updateCam(camera1, players[0].model);
+            updateCam(camera2, players[1].model);
         }
 
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
 
-            // Update Logic
-            updatePlayerMovement(players[0], delta, inputs.p1);
-            updatePlayerMovement(players[1], delta, inputs.p2);
+            updatePlayer(players[0], delta, inputs.p1);
+            updatePlayer(players[1], delta, inputs.p2);
             updateCameras();
 
-            // Render Split Screen
+            // Render Split
             const w = window.innerWidth;
             const h = window.innerHeight;
-            const halfW = w / 2;
+            const half = w / 2;
 
-            // Render Left (P1)
-            renderer.setViewport(0, 0, halfW, h);
-            renderer.setScissor(0, 0, halfW, h);
+            renderer.setViewport(0, 0, half, h);
+            renderer.setScissor(0, 0, half, h);
             renderer.render(scene, camera1);
 
-            // Render Right (P2)
-            renderer.setViewport(halfW, 0, halfW, h);
-            renderer.setScissor(halfW, 0, halfW, h);
+            renderer.setViewport(half, 0, half, h);
+            renderer.setScissor(half, 0, half, h);
             renderer.render(scene, camera2);
         }
 
-        // --- UTILS ---
-        function onWindowResize() {
-            const halfW = window.innerWidth / 2;
-            const aspect = halfW / window.innerHeight;
-            camera1.aspect = aspect;
-            camera1.updateProjectionMatrix();
-            camera2.aspect = aspect;
-            camera2.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function setupFileHandling() {
-            const dropZone = document.getElementById('drop-zone');
-            const fileInput = document.getElementById('file-input');
-
-            dropZone.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files[0]) loadModelFromFile(e.target.files[0]);
+        // --- UI & EVENTS ---
+        function setupUI() {
+            // Settings
+            const btn = document.getElementById('settings-btn');
+            const menu = document.getElementById('custom-menu');
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('visible');
             });
 
-            window.addEventListener('dragover', (e) => e.preventDefault());
-            window.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (e.dataTransfer.files[0]) loadModelFromFile(e.dataTransfer.files[0]);
+            // Fullscreen
+            const fsBtn = document.getElementById('fs-btn');
+            fsBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                else if (document.exitFullscreen) document.exitFullscreen();
             });
-        }
 
-        function setupCustomization() {
-            const textureLoader = new THREE.TextureLoader();
+            // Zoom
+            const zSlider = document.getElementById('zoom-slider');
+            zSlider.addEventListener('input', (e) => {
+                currentZoom = parseFloat(e.target.value);
+            });
+
+            // Textures
+            const texLoader = new THREE.TextureLoader();
             document.getElementById('floor-input').addEventListener('change', (e) => {
-                const f = e.target.files[0];
-                if(f) textureLoader.load(URL.createObjectURL(f), (t) => {
-                    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-                    t.repeat.set(10,10);
-                    floorMesh.material.map = t;
-                    floorMesh.material.needsUpdate = true;
+                if(e.target.files[0]) texLoader.load(URL.createObjectURL(e.target.files[0]), (t) => {
+                    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10,10);
+                    floorMesh.material.map = t; floorMesh.material.needsUpdate = true;
                     gridHelper.visible = false;
                 });
             });
             document.getElementById('sky-input').addEventListener('change', (e) => {
-                const f = e.target.files[0];
-                if(f) textureLoader.load(URL.createObjectURL(f), (t) => { scene.background = t; scene.fog = null; });
+                if(e.target.files[0]) texLoader.load(URL.createObjectURL(e.target.files[0]), (t) => { 
+                    scene.background = t; scene.fog = null; 
+                });
             });
 
-            const btn = document.getElementById('settings-btn');
-            const menu = document.getElementById('custom-menu');
-            btn.addEventListener('click', () => menu.classList.toggle('visible'));
+            // Click outside to close menu
+            document.addEventListener('click', (e) => {
+                if(!menu.contains(e.target) && e.target !== btn) menu.classList.remove('visible');
+            });
+        }
+
+        function setupInputs() {
+            // Keys
+            const handle = (k, pressed) => {
+                const key = k.toLowerCase();
+                if(key === 'w') inputs.p1.w = pressed;
+                if(key === 's') inputs.p1.s = pressed;
+                if(key === 'a') inputs.p1.a = pressed;
+                if(key === 'd') inputs.p1.d = pressed;
+                if(k === 'ArrowUp') inputs.p2.up = pressed;
+                if(k === 'ArrowDown') inputs.p2.down = pressed;
+                if(k === 'ArrowLeft') inputs.p2.left = pressed;
+                if(k === 'ArrowRight') inputs.p2.right = pressed;
+            };
+            document.addEventListener('keydown', e => handle(e.key, true));
+            document.addEventListener('keyup', e => handle(e.key, false));
+
+            // Touch
+            const bind = (id, p, k) => {
+                const el = document.getElementById(id);
+                el.addEventListener('touchstart', e => { e.preventDefault(); inputs[p][k] = true; });
+                el.addEventListener('touchend', e => { e.preventDefault(); inputs[p][k] = false; });
+            };
+            bind('p1-w', 'p1', 'w'); bind('p1-s', 'p1', 's'); bind('p1-a', 'p1', 'a'); bind('p1-d', 'p1', 'd');
+            bind('p2-up', 'p2', 'up'); bind('p2-down', 'p2', 'down'); bind('p2-left', 'p2', 'left'); bind('p2-right', 'p2', 'right');
+        }
+
+        function setupFileHandling() {
+            const dz = document.getElementById('drop-zone');
+            const inp = document.getElementById('file-input');
+            dz.addEventListener('click', () => inp.click());
+            inp.addEventListener('change', (e) => { if(e.target.files[0]) loadModelFromFile(e.target.files[0]); });
+            window.addEventListener('dragover', e => e.preventDefault());
+            window.addEventListener('drop', e => { e.preventDefault(); if(e.dataTransfer.files[0]) loadModelFromFile(e.dataTransfer.files[0]); });
+        }
+
+        function onWindowResize() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera1.aspect = (w/2)/h; camera1.updateProjectionMatrix();
+            camera2.aspect = (w/2)/h; camera2.updateProjectionMatrix();
+            renderer.setSize(w, h);
         }
     </script>
 </body>
